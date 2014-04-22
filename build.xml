@@ -1,0 +1,62 @@
+<project name="PVNRT" basedir="." default="main">
+
+    <property file="build.properties"/>
+
+    <property name="src.dir"     value="src"/>
+    <property name="lib.dir"     value="lib"/>
+
+    <property name="build.dir"   value="build"/>
+    <property name="classes.dir" value="${build.dir}/classes"/>
+    <property name="jar.dir"     value="${build.dir}/jar"/>
+
+    <property name="main-class"  value="PVNRT"/>
+
+
+
+    <target name="clean">
+        <delete dir="${build.dir}"/>
+    </target>
+
+    <target name="compile">
+        <mkdir dir="${classes.dir}"/>
+        <javac srcdir="${src.dir}" destdir="${classes.dir}" debug="${compile.debug}" includeantruntime="false">
+            <classpath>
+                <pathelement path="${lib.dir}"/>
+            </classpath>
+            <compilerarg value="-Xlint:unchecked"/>
+        </javac>
+    </target>
+
+    <target name="debug" depends="compile">
+        <java classpath="${classes.dir}" classname="${main-class}" fork="true">
+            <classpath>
+                <pathelement path="${lib.dir}"/>
+            </classpath>
+            <jvmarg value="-Xdebug"/>
+            <jvmarg value="-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=1044" />
+        </java>
+    </target>
+
+    <target name="jar" depends="compile">
+        <mkdir dir="${jar.dir}"/>
+        <jar destfile="${jar.dir}/${ant.project.name}.jar" basedir="${classes.dir}">
+            <fileset dir="${classes.dir}" includes="**/*.class"/>
+            <fileset dir="${lib.dir}" includes="**/*.class"/>
+            <manifest>
+                <attribute name="Main-Class" value="${main-class}"/>
+                <attribute name="Implementation-Title" value="PVNRT"/>
+                <attribute name="Implementation-Version" value="1.0"/>
+            </manifest>
+        </jar>
+    </target>
+
+    <target name="run" depends="jar">
+        <java jar="${jar.dir}/${ant.project.name}.jar" fork="true">
+        </java>
+    </target>
+
+    <target name="clean-build" depends="clean,jar"/>
+
+    <target name="main" depends="clean,run"/>
+
+</project>
