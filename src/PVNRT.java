@@ -102,6 +102,12 @@ public class PVNRT {
      */
     public static double[] calculForceParticule(double[] particule) {
         double[] force = {0.0, 0.0};
+       
+        if (particule[1] <= 0 || particule[1] >= Affichage.getPiston())
+			force[1] = -2 * particule[3] * MASSE_PARTICULE / DELTA_T_SIMULATION;
+	    if (particule[0] <= 0 || particule[0] >= CHAMBRE_LARGEUR)
+			force[0] = -2 * particule[2] * MASSE_PARTICULE / DELTA_T_SIMULATION;
+			
         return force;
     }
 
@@ -110,10 +116,18 @@ public class PVNRT {
      * Pour calculer la pression instantanée, la moyenne des pressions
      * exercées sur chacun des 4 murs est calculée, elles-mêmes calculées en
      * sommant les forces exercées par chaque particule sur chaque mur et en
-     * les divisant par la surface (la longueur du côté).
+	 * les divisant par la surface (la longueur du côté).
      */
     public static double calculPressionMoyenneInstantanee() {
-        return 0.0;
+		double sommeForce = 0.0;
+		double pressionMoyenne = 0.0;
+		double surfaceTotale = 0.0;
+		for (int i = 0; i < fParticules.length; i++)
+			sommeForce += norme(calculForceParticule(fParticules[i]));
+		surfaceTotale = 2 * CHAMBRE_LARGEUR + 2 * Affichage.getPiston();
+		pressionMoyenne = sommeForce / surfaceTotale;
+		
+        return pressionMoyenne;
     }
 
     /**
@@ -191,5 +205,12 @@ public class PVNRT {
     public static int randomInRange(int min, int max) {
         return min + (int)(Math.random() * ((max - min) + 1));
     }
+
+	/**
+	 * Renvoie la norme d'une force.
+	 */
+	public static double norme(double[] force) {
+		return Math.sqrt(Math.pow(force[0], 2) + Math.pow(force[1], 2));
+	}
 
 }
