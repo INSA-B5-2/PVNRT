@@ -7,7 +7,7 @@ import java.math.*;
 public class PVNRT {
 
     // Paramètres des particules.
-    static final double MASSE_PARTICULE = 40.0;
+    static final double MASSE_PARTICULE = 1.0;
     static final int NOMBRE_PARTICULES = 100;
     static final double VITESSE_INITIALE_PARTICULE = 1.0;
 
@@ -22,6 +22,7 @@ public class PVNRT {
 
     // Constantes physiques.
     static final BigDecimal kB = new BigDecimal("1.38E-16");
+    static final BigDecimal Na = new BigDecimal("6.02E23");
     static final double R = 8.314;
 
     // Variables globales.
@@ -113,12 +114,15 @@ public class PVNRT {
 
     /**
      * Renvoie la température moyenne instantanée dans la chambre (K).
-     * La température est calculée en effectuant la somme de l'énergie
-     * cinétique de chaque particule (calculée grâce à la vitesse instantanée
-     * de chacune avec Ec = 1/2 * m * v^2).
+     * La température est calculée avec la formule du premier TD.
+     * ON REMPLACE kB PAR 1
      */
     public static double calculTemperatureMoyenneInstantanee() {
-        return 0.0;
+		double temperature = 0.0;
+		for(int i = 0; i<fParticules.length; i++) {
+			temperature += (MASSE_PARTICULE * Math.pow(calculVitesseParticule(fParticules [i]), 2)) / (3 * 1);
+		}
+        return temperature;
     }
 
     /**
@@ -139,7 +143,7 @@ public class PVNRT {
      * Renvoie le produit nRT.
      */
     public static double calculnRT() {
-        return 0.0;
+        return NOMBRE_PARTICULES * R * calculTemperatureMoyenneInstantanee();
     }
 
     /**
