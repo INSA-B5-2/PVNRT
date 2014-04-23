@@ -2,8 +2,6 @@
  * Simulateur PVNRT - Groupe B5-2
  */
 
-import java.math.*;
-
 public class PVNRT {
 
     // Paramètres des particules.
@@ -21,8 +19,9 @@ public class PVNRT {
     static final double PISTON_VARIATION_MODULE = 0.1;
 
     // Constantes physiques.
-    static final BigDecimal kB = new BigDecimal("1.38E-16");
-    static final BigDecimal Na = new BigDecimal("6.02E23");
+    static final double k = 2;
+    static final double kB = 1;
+    static final double Na = 1;
     static final double R = 8.314;
 
     // Différentes formules disponibles.
@@ -33,6 +32,7 @@ public class PVNRT {
 
     // Commentaires.
     static final String COMMENTAIRE_1 = "Algo observé : modèle V0 ressort aux parois.";
+    static final String COMMENTAIRE_2 = "PV=%f   nRT=%f";
 
     // Variables globales.
     static double[][] fParticules;
@@ -59,6 +59,7 @@ public class PVNRT {
 	    Affichage.initAffichage(CHAMBRE_LARGEUR, CHAMBRE_HAUTEUR, HAUTEUR_MIN,
 	        DELAI, WIN_TITRE, DELTA_T_SIMULATION, PISTON_VARIATION_MODULE);
         Affichage.setParticules(fParticules, fCouleurs);
+        Affichage.setCommentaire(COMMENTAIRE_1);
     }
 
     /**
@@ -140,13 +141,13 @@ public class PVNRT {
     /**
      * Renvoie la température moyenne instantanée dans la chambre (K).
      * La température est calculée avec la formule du premier TD.
-     * ON REMPLACE kB PAR 1
      */
     public static double calculTemperatureMoyenneInstantanee() {
 		double temperature = 0.0;
 		for(int i = 0; i<fParticules.length; i++) {
-			temperature += (MASSE_PARTICULE * Math.pow(calculVitesseParticule(fParticules [i]), 2)) / (3 * 1);
+			temperature += Math.pow(calculVitesseParticule(fParticules [i]), 2);
 		}
+		temperature *= MASSE_PARTICULE / (3 * kB);
         return temperature;
     }
 
@@ -172,29 +173,57 @@ public class PVNRT {
     }
 
     /**
+     * Actualise la position de la particule.
+     */
+    public static void actualiserPositionParticule(int i) {
+        double[] p = fParticules[i];
+        p[0] += p[2] * DELTA_T_SIMULATION;
+        p[1] += p[3] * DELTA_T_SIMULATION;
+    }
+
+    /**
+     * Actualise la vitesse de la particule.
+     */
+    public static void actualiserVitesseParticule(int i) {
+        double[] p = fParticules[i];
+        actualiserAccelerationParticule(i);
+        p[2] += p[4] * DELTA_T_SIMULATION;
+        p[3] += p[5] * DELTA_T_SIMULATION;
+        fVitesseMax = Math.max(fVitesseMax, calculVitesseParticule(fParticules[i]));
+    }
+
+    /**
+     * Actualise l'accélération de la particule en fonction des forces.
+     */
+    public static void actualiserAccelerationParticule(int i) {
+        double[] p = fParticules[i];
+        double[] force = calculForceParticule(p);
+        p[4] = force[0] / MASSE_PARTICULE;
+        p[5] = force[1] / MASSE_PARTICULE;
+    }
+
+    /**
      * Appelé lorsque la fenêtre rafraîchit l'affichage.
      * Déplace les particules et actualise les graphiques.
      */
     public static void next() {
-        // Afficher le commentaire par défaut.
-        Affichage.setCommentaire(COMMENTAIRE_1);
+        // Afficher les valeurs de PV et nRT.
+        Affichage.setCommentaire(String.format(COMMENTAIRE_2, calculPV(), calculnRT()));
 
         // Déterminer la méthode en cours d'utilisation.
-        Formule method = Affichage.getCalcXYmethod().equals("EULER") ?
+        Formule methode = Affichage.getCalcXYmethod().equals("EULER") ?
             Formule.Euler : Formule.Verlet;
 
         // Mise à jour des positions et des vitesses des particules.
         for (int i = 0; i < NOMBRE_PARTICULES; i++) {
-            double[] p = fParticules[i];
-
-            // Position
-            p[0] += p[2] * DELTA_T_SIMULATION;
-            p[1] += p[3] * DELTA_T_SIMULATION;
-
-            // Vitesse
-            p[2] += p[4] * DELTA_T_SIMULATION;
-            p[3] += p[5] * DELTA_T_SIMULATION;
-            fCouleurs[i] = creerCouleurParticule(p);
+            if (methode == Formule.Euler) {
+                actualiserPositionParticule(i);
+                actualiserVitesseParticule(i);
+            } else if (methode == Formule.Verlet) {
+                actualiserVitesseParticule(i);
+                actualiserPositionParticule(i);
+            }
+            fCouleurs[i] = creerCouleurParticule(fParticules[i]);
         }
 
     }
