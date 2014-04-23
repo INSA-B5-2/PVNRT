@@ -161,7 +161,7 @@ public class PVNRT {
      * Renvoie le produit P*V.
      */
     public static double calculPV() {
-        return 0.0;
+        return calculPressionMoyenneInstantanee() * CHAMBRE_LARGEUR * Affichage.getPiston();
     }
 
     /**
