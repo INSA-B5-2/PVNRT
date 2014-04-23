@@ -25,9 +25,19 @@ public class PVNRT {
     static final BigDecimal Na = new BigDecimal("6.02E23");
     static final double R = 8.314;
 
+    // Différentes formules disponibles.
+    enum Formule {
+        Euler,
+        Verlet
+    }
+
+    // Commentaires.
+    static final String COMMENTAIRE_1 = "Algo observé : modèle V0 ressort aux parois.";
+
     // Variables globales.
     static double[][] fParticules;
     static int[][] fCouleurs;
+    static double fVitesseMax;
 
     /**
      * Initialise la simulation.
@@ -37,13 +47,13 @@ public class PVNRT {
         // Initialise les particules.
         fParticules = new double[NOMBRE_PARTICULES][6];
         fCouleurs = new int[NOMBRE_PARTICULES][3];
-        double vitesse_max = 0;
+        fVitesseMax = 0;
         for (int i = 0; i < NOMBRE_PARTICULES; i++) {
             fParticules[i] = creerParticule();
-            vitesse_max = Math.max(vitesse_max, calculVitesseParticule(fParticules[i]));
+            fVitesseMax = Math.max(fVitesseMax, calculVitesseParticule(fParticules[i]));
         }
         for (int i = 0; i < NOMBRE_PARTICULES; i++)
-            fCouleurs[i] = creerCouleurParticule(fParticules[i], vitesse_max);
+            fCouleurs[i] = creerCouleurParticule(fParticules[i]);
 
         // Initialiser et afficher la fenêtre.
 	    Affichage.initAffichage(CHAMBRE_LARGEUR, CHAMBRE_HAUTEUR, HAUTEUR_MIN,
@@ -60,20 +70,21 @@ public class PVNRT {
     public static double[] creerParticule() {
         double theta = Math.random() * 2 * Math.PI;
         double[] particule = {
-            randomInRange(0, CHAMBRE_LARGEUR),
-            randomInRange(0, HAUTEUR_MIN),
-            VITESSE_INITIALE_PARTICULE * Math.cos(theta),
-            VITESSE_INITIALE_PARTICULE * Math.sin(theta),
-            0,
-            0};
+            randomInRange(0, CHAMBRE_LARGEUR),             // Position X
+            randomInRange(0, HAUTEUR_MIN),                 // Position Y
+            VITESSE_INITIALE_PARTICULE * Math.cos(theta),  // Vitesse X
+            VITESSE_INITIALE_PARTICULE * Math.sin(theta),  // Vitesse Y
+            0,                                             // Accélération X
+            0                                              // Accélération Y
+        };
         return particule;
     }
 
     /**
      * Renvoie un tableau RGB de couleur représentatif de la vitesse.
      */
-    public static int[] creerCouleurParticule(double[] particule, double vitesse_max) {
-        double rapport = calculVitesseParticule(particule) / vitesse_max;
+    public static int[] creerCouleurParticule(double[] particule) {
+        double rapport = calculVitesseParticule(particule) / fVitesseMax;
         int[] couleur = {(int) (rapport * 255), 0, 0};
         return couleur;
     }
@@ -151,7 +162,27 @@ public class PVNRT {
      * Déplace les particules et actualise les graphiques.
      */
     public static void next() {
-        
+        // Afficher le commentaire par défaut.
+        Affichage.setCommentaire(COMMENTAIRE_1);
+
+        // Déterminer la méthode en cours d'utilisation.
+        Formule method = Affichage.getCalcXYmethod().equals("EULER") ?
+            Formule.Euler : Formule.Verlet;
+
+        // Mise à jour des positions et des vitesses des particules.
+        for (int i = 0; i < NOMBRE_PARTICULES; i++) {
+            double[] p = fParticules[i];
+
+            // Position
+            p[0] += p[2] * DELTA_T_SIMULATION;
+            p[1] += p[3] * DELTA_T_SIMULATION;
+
+            // Vitesse
+            p[2] += p[4] * DELTA_T_SIMULATION;
+            p[3] += p[5] * DELTA_T_SIMULATION;
+            fCouleurs[i] = creerCouleurParticule(p);
+        }
+
     }
 
     /**
