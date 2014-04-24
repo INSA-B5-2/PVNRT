@@ -8,10 +8,11 @@ public class PVNRT {
     static final int CHAMBRE_LARGEUR = 100;
     static final int CHAMBRE_HAUTEUR = 100;
     static final int CHAMBRE_HAUTEUR_MIN = 20;
-    static final int DELAI = 10;
+    static final int DELAI = 0;
     static final String WIN_TITRE = "Simulateur PVNRT - Groupe B5-2";
     static final double DELTA_T_SIMULATION = 0.1;
     static final double PISTON_VARIATION_MODULE = 0.1;
+    static final int ECHANTILLONS_COURBE = 500;
 
     // Constantes physiques.
     static final double k = 100;
@@ -20,15 +21,16 @@ public class PVNRT {
     static final double R = 8.314;
 
     // Paramètres des particules.
-    static final double MASSE_PARTICULE = 1;
-    static final int NOMBRE_PARTICULES = 100;
-    static final double VITESSE_INITIALE_PARTICULE = 10;
+    static final double MASSE_PARTICULE = 30 / Na;
+    static final int NOMBRE_PARTICULES = 300;
+    static final double VITESSE_INITIALE_PARTICULE = 2;
 
     // Différentes formules disponibles.
     enum Formule {
         Euler,
         Verlet
     }
+    static Formule fMethode;
 
     // Commentaires.
     static final String COMMENTAIRE_1 = "Algo observé : modèle V1.";
@@ -38,8 +40,18 @@ public class PVNRT {
     static double[][] fParticules;
     static int[][] fCouleurs;
     static double fVitesseMax;
-    static double fVitessePiston;
-    static double fPistonAvant;
+
+    // Variables globales des courbes.
+    static double[] fPressions;
+    static double[] fTemperatures;
+    static double[] fPressionMoyenne;
+    static double[] fTemperatureMoyenne;
+    static int fIndiceProchainVide;
+    static int fIndiceDeb;
+    static TraceCourbe fCourbePression;
+    static TraceCourbe fCourbeTemperature;
+    static TraceCourbe fCourbePressionMoyenne;
+    static TraceCourbe fCourbeTemperatureMoyenne;
 
     /**
      * Initialise la simulation.
@@ -64,9 +76,20 @@ public class PVNRT {
         Affichage.setParticules(fParticules, fCouleurs);
         Affichage.setCommentaire(COMMENTAIRE_1);
 
-        // Position et vitesse initiale du piston.
-        fPistonAvant = Affichage.getPiston();
-        fVitessePiston = 0;
+        // Ajouter les courbes.
+        fPressions = new double[ECHANTILLONS_COURBE];
+        fTemperatures = new double[ECHANTILLONS_COURBE];
+        fPressionMoyenne = new double[ECHANTILLONS_COURBE];
+        fTemperatureMoyenne = new double[ECHANTILLONS_COURBE];
+        fIndiceProchainVide = fIndiceDeb = 0;
+        fCourbePression = TraceCourbe.getCourbe("Pression instantanée");
+        fCourbeTemperature = TraceCourbe.getCourbe("Température instantanée");
+        fCourbePressionMoyenne = TraceCourbe.getCourbe("Pression moyenne");
+        fCourbeTemperatureMoyenne = TraceCourbe.getCourbe("Température moyenne");
+        Affichage.addCourbe(fCourbePression);
+        Affichage.addCourbe(fCourbeTemperature);
+        Affichage.addCourbe(fCourbePressionMoyenne);
+        Affichage.addCourbe(fCourbeTemperatureMoyenne);
     }
 
     /**
@@ -131,7 +154,7 @@ public class PVNRT {
         // Droite
         else if (particule[0] > CHAMBRE_LARGEUR)
             force[0] = -k * (particule[0] - CHAMBRE_LARGEUR);
-            
+
         return force;
     }
 
@@ -158,7 +181,14 @@ public class PVNRT {
      * Renvoie la cumulation des pressions moyennes calculées jusqu'ici (Pa).
      */
     public static double calculPressionMoyenneCumulees() {
-        return 0.0;
+        double somme = 0;
+        double non_vides = 0;
+        for (int i = 0; i < fPressions.length; i++) {
+            somme += fPressions[i];
+            if (fPressions[i] != 0)
+                non_vides += 1;
+        }
+        return somme / non_vides;
     }
 
     /**
@@ -177,21 +207,28 @@ public class PVNRT {
      * Renvoie la cumulation des températures moyennes calculées jusqu'ici (K).
      */
     public static double calculTemperatureMoyenneCumulees() {
-        return 0.0;
+        double somme = 0;
+        double non_vides = 0;
+        for (int i = 0; i < fTemperatures.length; i++) {
+            somme += fTemperatures[i];
+            if (fTemperatures[i] != 0)
+                non_vides += 1;
+        }
+        return somme / non_vides;
     }
 
     /**
      * Renvoie le produit PV.
      */
     public static double calculPV() {
-        return calculPressionMoyenneInstantanee() * CHAMBRE_LARGEUR * Affichage.getPiston();
+        return calculPressionMoyenneCumulees() * CHAMBRE_LARGEUR * Affichage.getPiston();
     }
 
     /**
      * Renvoie le produit nRT.
      */
     public static double calculnRT() {
-        return NOMBRE_PARTICULES * R * calculTemperatureMoyenneInstantanee();
+        return NOMBRE_PARTICULES / Na * R * calculTemperatureMoyenneCumulees();
     }
 
     /**
@@ -199,8 +236,8 @@ public class PVNRT {
      */
     public static void actualiserPositionParticule(int i) {
         double[] p = fParticules[i];
-        p[0] += p[2] * DELTA_T_SIMULATION + fVitessePiston * DELTA_T_SIMULATION;
-        p[1] += p[3] * DELTA_T_SIMULATION + fVitessePiston * DELTA_T_SIMULATION;
+        p[0] += p[2] * DELTA_T_SIMULATION;
+        p[1] += p[3] * DELTA_T_SIMULATION;
     }
 
     /**
@@ -229,31 +266,37 @@ public class PVNRT {
      * Déplace les particules et actualise les graphiques.
      */
     public static void next() {
-        // Afficher les valeurs de PV et nRT.
-        Affichage.setCommentaire(String.format(COMMENTAIRE_2, calculPV(), calculnRT(), calculPV()/calculnRT()));
-
         // Déterminer la méthode en cours d'utilisation.
-        Formule methode = Affichage.getCalcXYmethod().equals("EULER") ?
+        fMethode = Affichage.getCalcXYmethod().equals("EULER") ?
             Formule.Euler : Formule.Verlet;
-
-        // Mise à jour de la vitesse du piston.
-        double piston = Affichage.getPiston();
-        if (piston != CHAMBRE_HAUTEUR || piston != CHAMBRE_HAUTEUR_MIN)
-            fVitessePiston = (piston - fPistonAvant) / DELTA_T_SIMULATION;
-        fPistonAvant = piston;
 
         // Mise à jour des positions et des vitesses des particules.
         for (int i = 0; i < NOMBRE_PARTICULES; i++) {
-            if (methode == Formule.Euler) {
+            if (fMethode == Formule.Euler) {
                 actualiserPositionParticule(i);
                 actualiserVitesseParticule(i);
-            } else if (methode == Formule.Verlet) {
+            } else if (fMethode == Formule.Verlet) {
                 actualiserVitesseParticule(i);
                 actualiserPositionParticule(i);
             }
             fCouleurs[i] = creerCouleurParticule(fParticules[i]);
         }
 
+        // Mise à jour des courbes.
+        fPressions[fIndiceProchainVide] = calculPressionMoyenneInstantanee();
+        fTemperatures[fIndiceProchainVide] = calculTemperatureMoyenneInstantanee();
+        fPressionMoyenne[fIndiceProchainVide] = calculPressionMoyenneCumulees();
+        fTemperatureMoyenne[fIndiceProchainVide] = calculTemperatureMoyenneCumulees();
+        fIndiceProchainVide  = (fIndiceProchainVide + 1) % fPressions.length;
+        if (fIndiceProchainVide == fIndiceDeb)
+            fIndiceDeb = (fIndiceDeb + 1) % fPressions.length;
+        fCourbePression.updtData(fPressions, fIndiceDeb, fIndiceProchainVide);
+        fCourbeTemperature.updtData(fTemperatures, fIndiceDeb, fIndiceProchainVide);
+        fCourbePressionMoyenne.updtData(fPressionMoyenne, fIndiceDeb, fIndiceProchainVide);
+        fCourbeTemperatureMoyenne.updtData(fTemperatureMoyenne, fIndiceDeb, fIndiceProchainVide);
+
+        // Afficher les valeurs de PV et nRT.
+        Affichage.setCommentaire(String.format(COMMENTAIRE_2, calculPV(), calculnRT(), calculPV()/calculnRT()));
     }
 
     /**
