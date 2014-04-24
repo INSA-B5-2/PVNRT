@@ -22,7 +22,7 @@ public class PVNRT {
     // Paramètres des particules.
     static final double MASSE_PARTICULE = 1;
     static final int NOMBRE_PARTICULES = 100;
-    static final double VITESSE_INITIALE_PARTICULE = 2;
+    static final double VITESSE_INITIALE_PARTICULE = 10;
 
     // Différentes formules disponibles.
     enum Formule {
@@ -125,7 +125,7 @@ public class PVNRT {
             force[1] = -k * (particule[1] - Affichage.getPiston());
 
         // Gauche
-        if (particule[0] < 5)
+        if (particule[0] < 0)
             force[0] = -k * particule[0];
 
         // Droite
