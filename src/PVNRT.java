@@ -11,12 +11,12 @@ public class PVNRT {
     static final int CHAMBRE_HAUTEUR_MIN = 30;
     static final int DELAI = 0;
     static final String WIN_TITRE = "Simulateur PVNRT - Groupe B5-2";
-    static final double DELTA_T_SIMULATION = 0.0001;
+    static final double DELTA_T_SIMULATION = 0.01;
     static final double PISTON_VARIATION_MODULE = 0.1;
     static final int ECHANTILLONS_COURBE = 1000;
 
     // Constantes physiques.
-    static final double k = 1000000;
+    static final double k = 1000;
     static final double kB = 1.38;
     static final double Na = 6.02;
     static final double R = 8.314;
@@ -24,7 +24,7 @@ public class PVNRT {
     // Paramètres des particules.
     static final double MASSE_PARTICULE = 29 / Na;
     static final int NOMBRE_PARTICULES = 500;
-    static final double VITESSE_INITIALE_PARTICULE = 1000;
+    static final double VITESSE_INITIALE_PARTICULE = 10;
     static final double SEUIL_CHOC = 5.0;
 
     // Différentes formules disponibles.
