@@ -1,5 +1,6 @@
 /**
  * Simulateur PVNRT - Groupe B5-2
+ * Github : https://github.com/INSA-B5-2/PVNRT
  */
 
 public class PVNRT {
@@ -10,7 +11,7 @@ public class PVNRT {
     static final int CHAMBRE_HAUTEUR_MIN = 20;
     static final int DELAI = 0;
     static final String WIN_TITRE = "Simulateur PVNRT - Groupe B5-2";
-    static final double DELTA_T_SIMULATION = 0.1;
+    static final double DELTA_T_SIMULATION = 0.01;
     static final double PISTON_VARIATION_MODULE = 0.1;
     static final int ECHANTILLONS_COURBE = 500;
 
@@ -21,9 +22,10 @@ public class PVNRT {
     static final double R = 8.314;
 
     // Paramètres des particules.
-    static final double MASSE_PARTICULE = 30 / Na;
-    static final int NOMBRE_PARTICULES = 300;
+    static final double MASSE_PARTICULE = 29 / Na;
+    static final int NOMBRE_PARTICULES = 3;
     static final double VITESSE_INITIALE_PARTICULE = 2;
+    static final double SEUIL_CHOC = 5.0;
 
     // Différentes formules disponibles.
     enum Formule {
@@ -154,6 +156,20 @@ public class PVNRT {
         // Droite
         else if (particule[0] > CHAMBRE_LARGEUR)
             force[0] = -k * (particule[0] - CHAMBRE_LARGEUR);
+
+        // Vérifier qu'il n'y a pas d'interactions avec d'autres particules.
+        // Note : ce code ne fonctionne pas encore.
+        /**for (int i = 0; i < NOMBRE_PARTICULES; i++) {
+            double d = distance(fParticules[i], particule);
+            double angle = angle(fParticules[i], particule);
+            if (d < SEUIL_CHOC && particule != fParticules[i]) {
+                System.out.println("-----");
+                System.out.println(d);
+                System.out.println(1 / Math.pow(d, 2) * Math.cos(angle));
+                force[0] += 1 / Math.pow(d, 2) * Math.cos(angle);
+                force[1] += 1 / Math.pow(d, 2) * Math.sin(angle);
+            }
+        }**/
 
         return force;
     }
@@ -296,7 +312,8 @@ public class PVNRT {
         fCourbeTemperatureMoyenne.updtData(fTemperatureMoyenne, fIndiceDeb, fIndiceProchainVide);
 
         // Afficher les valeurs de PV et nRT.
-        Affichage.setCommentaire(String.format(COMMENTAIRE_2, calculPV(), calculnRT(), calculPV()/calculnRT()));
+        Affichage.setCommentaire(String.format(COMMENTAIRE_2,
+            calculPV(), calculnRT(), calculPV()/calculnRT()));
     }
 
     /**
@@ -310,7 +327,27 @@ public class PVNRT {
      * Renvoie la norme d'une force.
      */
     public static double norme(double[] force) {
-        return Math.sqrt(Math.pow(force[0], 2) + Math.pow(force[1], 2));
+        return norme(force[0], force[1]);
     }
 
+    /**
+     * Renvoie la norme d'une force à partir de ses coordonées.
+     */
+    public static double norme(double x, double y) {
+        return Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2));
+    }
+
+    /**
+     * Calcule la distance entre deux particules.
+     */
+    public static double distance(double[] particule1, double[] particule2) {
+        return norme(particule2[0] - particule1[0], particule2[1] - particule1[1]);
+    }
+
+    /**
+     * Calcule l'angle entre deux particules.
+     */
+    public static double angle(double[] particule1, double[] particule2) {
+        return Math.atan2(particule2[1] - particule1[1], particule2[0] - particule2[0]);
+    }
 }
