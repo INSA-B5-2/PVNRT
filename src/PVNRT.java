@@ -8,23 +8,23 @@ public class PVNRT {
     // Paramètres de la fenêtre de simulation.
     static final int CHAMBRE_LARGEUR = 100;
     static final int CHAMBRE_HAUTEUR = 100;
-    static final int CHAMBRE_HAUTEUR_MIN = 20;
+    static final int CHAMBRE_HAUTEUR_MIN = 30;
     static final int DELAI = 0;
     static final String WIN_TITRE = "Simulateur PVNRT - Groupe B5-2";
-    static final double DELTA_T_SIMULATION = 0.01;
+    static final double DELTA_T_SIMULATION = 0.0001;
     static final double PISTON_VARIATION_MODULE = 0.1;
-    static final int ECHANTILLONS_COURBE = 500;
+    static final int ECHANTILLONS_COURBE = 1000;
 
     // Constantes physiques.
-    static final double k = 100;
+    static final double k = 1000000;
     static final double kB = 1.38;
     static final double Na = 6.02;
     static final double R = 8.314;
 
     // Paramètres des particules.
     static final double MASSE_PARTICULE = 29 / Na;
-    static final int NOMBRE_PARTICULES = 3;
-    static final double VITESSE_INITIALE_PARTICULE = 2;
+    static final int NOMBRE_PARTICULES = 500;
+    static final double VITESSE_INITIALE_PARTICULE = 1000;
     static final double SEUIL_CHOC = 5.0;
 
     // Différentes formules disponibles.
@@ -36,7 +36,7 @@ public class PVNRT {
 
     // Commentaires.
     static final String COMMENTAIRE_1 = "Algo observé : modèle V1.";
-    static final String COMMENTAIRE_2 = "PV=%f   nRT=%f   PV/nRT=%f";
+    static final String COMMENTAIRE_2 = "PV=%.0f   nRT=%.0f   PV/nRT=%.3f";
 
     // Variables globales.
     static double[][] fParticules;
@@ -163,9 +163,6 @@ public class PVNRT {
             double d = distance(fParticules[i], particule);
             double angle = angle(fParticules[i], particule);
             if (d < SEUIL_CHOC && particule != fParticules[i]) {
-                System.out.println("-----");
-                System.out.println(d);
-                System.out.println(1 / Math.pow(d, 2) * Math.cos(angle));
                 force[0] += 1 / Math.pow(d, 2) * Math.cos(angle);
                 force[1] += 1 / Math.pow(d, 2) * Math.sin(angle);
             }
@@ -215,7 +212,7 @@ public class PVNRT {
         double temperature = 0.0;
         for(int i = 0; i < fParticules.length; i++)
             temperature += Math.pow(calculVitesseParticule(fParticules [i]), 2);
-        temperature *= MASSE_PARTICULE / (3 * kB);
+        temperature *= MASSE_PARTICULE / (2 * kB);
         return temperature;
     }
 
